@@ -65,6 +65,40 @@ dependencies {
     annotationProcessor("org.projectlombok", "lombok", "1.18.20")
 }
 
+// fun Configuration.isDeprecated() = this is DeprecatableConfiguration && resolutionAlternatives != null
+
+// fun ConfigurationContainer.resolveAll() = this
+//   .filter { it.isCanBeResolved && !it.isDeprecated() }
+//   .forEach { it.resolve() }
+
+// tasks.register("downloadDependencies") {
+//   doLast {
+//     configurations.resolveAll()
+//     buildscript.configurations.resolveAll()
+//   }
+// }
+tasks.withType<Jar> {
+    manifest {
+        attributes["Multi-Release"] = "true"
+    }
+}
+
+tasks.register<Jar>("uberJar") {
+    manifest {
+        attributes["Multi-Release"] = "true"
+    }
+    archiveClassifier.set("uber")
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    from(sourceSets.main.get().output)
+    manifest {
+        attributes["Multi-Release"] = "true"
+    }
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
+    })
+}
+
 publishing {
     publications {
         create<MavenPublication>("serverJar") {
